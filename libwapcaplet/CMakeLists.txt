@@ -36,7 +36,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
 # setup any additional libs required by this.
 set(WAPCAPLET_ADDITIONAL_LIBS "")
 set(WAPCAPLET_ADDITIONAL_DIRS "")
-set(WAPCAPLET_ADDITIONAL_DEFS "")
+set(WAPCAPLET_ADDITIONAL_DEFS "_BSD_SOURCE" "_DEFAULT_SOURCE")
 
 # From: https://gitlab.kitware.com/cmake/community/wikis/contrib/macros/TestInline
 # Inspired from /usr/share/autoconf/autoconf/c.m4

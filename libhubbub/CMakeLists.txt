@@ -113,7 +113,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
 # setup any additional libs required by this.
 set(HUBBUB_ADDITIONAL_LIBS "")
 set(HUBBUB_ADDITIONAL_DIRS "")
-set(HUBBUB_ADDITIONAL_DEFS "")
+set(HUBBUB_ADDITIONAL_DEFS "_BSD_SOURCE" "_DEFAULT_SOURCE")
 
 #pkg_check_modules
 if(PKG_CONFIG_FOUND)
