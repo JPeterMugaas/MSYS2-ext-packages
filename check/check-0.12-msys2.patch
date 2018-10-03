@@ -1,0 +1,11 @@
+--- check-0.12.0/m4/ltoptions.m4.orig	2018-10-02 08:54:38.907326200 -0400
++++ check-0.12.0/m4/ltoptions.m4	2018-10-02 08:55:14.243229800 -0400
+@@ -128,7 +128,7 @@ LT_OPTION_DEFINE([LT_INIT], [win32-dll],
+ [enable_win32_dll=yes
+ 
+ case $host in
+-*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-cegcc*)
++*-*-cygwin* |*-*-msys* | *-*-mingw* | *-*-pw32* | *-*-cegcc*)
+   AC_CHECK_TOOL(AS, as, false)
+   AC_CHECK_TOOL(DLLTOOL, dlltool, false)
+   AC_CHECK_TOOL(OBJDUMP, objdump, false)

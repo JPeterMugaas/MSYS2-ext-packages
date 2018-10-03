@@ -1,0 +1,94 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=libparserutils
+pkgbase=${_realname}
+pkgname=("${_realname}" "${_realname}-devel")
+pkgver=0.2.4
+pkgrel=1
+pkgdesc="Library for building efficient parsers"
+arch=('any')
+url='http://www.netsurf-browser.org/projects/libparserutils/'
+license=('MIT')
+depends=("libiconv")
+makedepends=('cmake' 'libiconv-devel' 'perl')
+options=('strip' 'staticlibs')
+source=("http://download.netsurf-browser.org/libs/releases/${_realname}-$pkgver-src.tar.gz"
+        CMakeLists.txt
+        test-htonl-ntohl.patch)
+sha256sums=('322bae61b30ccede3e305bf6eae2414920649775bc5ff1d1b688012a3c4947d8'
+            'SKIP'
+            'd937f894a8c122dbd1cadd3a0a957d9f16cdc48e30edbcbbd377ecbcde06724b')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  cp ../CMakeLists.txt .
+  apply_patch_with_msg test-htonl-ntohl.patch
+}
+
+build() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  cmake \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    "${extra_config[@]}" \
+    -DBUILD_{SHARED,STATIC}_LIBS=ON \
+    ../${_realname}-${pkgver}
+
+  make
+  make install DESTDIR="${srcdir}/dest"
+}
+
+
+check() {
+  cd "${srcdir}"/build-${CARCH}
+  make test || true
+}
+
+package_libparserutils() {
+  cd ${srcdir}/dest
+  mkdir -p "${pkgdir}/usr/bin"
+  cp -f usr/bin/*.dll "${pkgdir}/usr/bin"
+  cd "${srcdir}"/build-${CARCH}
+  # license
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}/usr/share/licenses/${_realname}/COPYING
+}
+
+package_libparserutils-devel() {
+  groups=('development')
+  options=('staticlibs')
+  depends=("libparserutils=${pkgver}")
+  pkgdesc="Headers and static library for libparserutils"
+
+  cd ${srcdir}/dest
+  mkdir -p ${pkgdir}/usr
+  cp -rf ${srcdir}/dest/usr/include $pkgdir/usr/
+  cp -rf ${srcdir}/dest/usr/lib $pkgdir/usr/
+}

@@ -1,0 +1,60 @@
+# Maintainer: Andrew Chadwick <a.t.chadwick@gmail.com>
+# Contributor: Andrew Sun <adsun701@gmail.com>
+
+_realname=json-c
+pkgbase=${_realname}
+pkgname=("${_realname}" "${_realname}-devel")
+pkgver=0.13.1_20180305
+pkgrel=1
+arch=('any')
+pkgdesc="A JSON implementation in C"
+url='https://github.com/json-c/json-c'
+options=('strip' '!debug' 'staticlibs')
+license=('MIT')
+source=(https://github.com/json-c/json-c/archive/${_realname}-${pkgver//_/-}.tar.gz
+        001-install-private-header.patch)
+sha256sums=('5d867baeb7f540abe8f3265ac18ed7a24f91fe3c5f4fd99ac3caba0708511b90'
+            '3c568a03261221de4bca787a1a1321246dc0edc7f58b4c47521dbead78cab2a4')
+noextract=(${_realname}-${pkgver//_/-}.tar.gz)
+
+prepare() {
+  tar -xzvf ${_realname}-${pkgver//_/-}.tar.gz -C ${srcdir} || true
+  cd "${srcdir}/${_realname}-${_realname}-${pkgver/_/-}"
+  patch -p1 -i ${srcdir}/001-install-private-header.patch
+
+  ./autogen.sh
+}
+
+build() {
+  [[ -d build-${MINGW_CHOST} ]] && rm -rf build-${MINGW_CHOST}
+  mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
+
+  ../${_realname}-${_realname}-${pkgver/_/-}/configure \
+    --prefix="/usr" \
+    --enable-shared \
+    --enable-static
+
+  make all
+  make install DESTDIR="${srcdir}/dest"
+}
+
+package_json-c() {
+
+  cd ${srcdir}/dest
+  mkdir -p "${pkgdir}/usr/bin"
+  cp -f usr/bin/*.dll "${pkgdir}/usr/bin"
+
+  install -D ${srcdir}/${_realname}-${_realname}-${pkgver/_/-}/COPYING ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+}
+
+package_json-c-devel() {
+  groups=('development')
+  options=('staticlibs')
+  depends=("json-c=${pkgver}")
+  pkgdesc="Headers and static library for libcss"
+
+  cd ${srcdir}/dest
+  mkdir -p ${pkgdir}/usr
+  cp -rf ${srcdir}/dest/usr/include $pkgdir/usr/
+  cp -rf ${srcdir}/dest/usr/lib $pkgdir/usr/
+}

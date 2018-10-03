@@ -1,0 +1,100 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=libnsutils
+pkgbase=${_realname}
+pkgname=("${_realname}" "${_realname}-devel")
+pkgver=0.0.5
+_netsurf=3.8
+pkgrel=1
+pkgdesc="NetSurf Utilities (mingw-w64)"
+arch=('any')
+url='http://source.netsurf-browser.org/libnsutils.git/' #no https available
+license=('MIT')
+depends=("libparserutils>=0.2.4" "libwapcaplet>=0.4.1")
+makedepends=("cmake" "libparserutils-devel>=0.2.4" "libwapcaplet-devel>=0.4.1")
+options=('strip' 'staticlibs')
+# no https
+source=("http://download.netsurf-browser.org/netsurf/releases/source-full/netsurf-all-$_netsurf.tar.gz"
+        CMakeLists.txt)
+noextract=("netsurf-all-$_netsurf.tar.gz")
+sha256sums=('eb4864d4459d6f9958dd10a3301c272ea7f5df72667a7db0aad5bc5ae06c0e10'
+            'SKIP')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  cd "${srcdir}"
+  tar zxfv "netsurf-all-$_netsurf.tar.gz" || true
+  cd "${srcdir}"/netsurf-all-$_netsurf/${_realname}/
+  cp ../../CMakeLists.txt .
+#  apply_patch_with_msg intypes_include.patch
+#    0002-A-less-important-fix.patch
+}
+
+build() {
+  cd "${srcdir}"/netsurf-all-$_netsurf/${_realname}/
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  cmake \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      "${extra_config[@]}" \
+      -DBUILD_{SHARED,STATIC}_LIBS=ON \
+      "${srcdir}"/netsurf-all-$_netsurf/${_realname}
+
+  make
+  make install DESTDIR="${srcdir}/dest"
+}
+
+
+check() {
+  cd "${srcdir}"/build-${CARCH}
+  make test
+}
+
+package_libnsutils() {
+  cd ${srcdir}/dest
+  mkdir -p "${pkgdir}/usr/bin"
+  cp -f usr/bin/*.dll "${pkgdir}/usr/bin"
+  cd "${srcdir}"/build-${CARCH}
+
+  install -Dm644 "${srcdir}"/netsurf-all-$_netsurf/${_realname}//COPYING \
+     ${pkgdir}/usr/share/licenses/${_realname}/COPYING
+}
+
+package_libnsutils-devel() {
+  groups=('development')
+  options=('staticlibs')
+  depends=("libnsutils=${pkgver}")
+  pkgdesc="Headers and static library for libhubbub"
+
+  cd ${srcdir}/dest
+  mkdir -p ${pkgdir}/usr
+  cp -rf ${srcdir}/dest/usr/include $pkgdir/usr/
+  cp -rf ${srcdir}/dest/usr/lib $pkgdir/usr/
+}
+

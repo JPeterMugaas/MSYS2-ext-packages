@@ -1,0 +1,14 @@
+--- libdom-0.3.3/include/dom/inttypes.h.orig	2018-09-27 00:40:34.657363000 -0400
++++ libdom-0.3.3/include/dom/inttypes.h	2018-09-27 00:41:18.327647700 -0400
+@@ -8,7 +8,11 @@
+ #ifndef dom_inttypes_h_
+ #define dom_inttypes_h_
+ 
++#if defined(_WIN32) || defined(__CYGWIN__)
++#include <stdint.h>
++#endif
+ #include <inttypes.h>
++
+ 
+ /**
+  * The IDL spec(2nd ed) 3.10.5 defines a short type with 16bit range

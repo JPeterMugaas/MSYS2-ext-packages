@@ -1,0 +1,95 @@
+# Maintainer: J Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=libhubbub
+pkgbase=${_realname}
+pkgname=("${_realname}" "${_realname}-devel")
+pkgver=0.3.5
+pkgrel=1
+pkgdesc="HTML5 compliant parsing library"
+arch=('any')
+url='http://www.netsurf-browser.org/projects/hubbub/' # no https available
+license=('MIT')
+depends=('libparserutils')
+makedepends=('cmake' 'perl' 'libparserutils-devel')
+#checkdepends=('json-c')
+source=("http://download.netsurf-browser.org/libs/releases/${_realname}-$pkgver-src.tar.gz" # no https available
+         CMakeLists.txt
+         fix-test-tokenizer2.patch)
+sha256sums=('aa82e36be124e582e307929eee81a42ffaf4355b2986934917271d65d20cd88f'
+            'SKIP' 'SKIP')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  cp ../CMakeLists.txt .
+  apply_patch_with_msg fix-test-tokenizer2.patch
+}
+
+build() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  cmake \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      "${extra_config[@]}" \
+      -DBUILD_{SHARED,STATIC}_LIBS=ON \
+      ../${_realname}-${pkgver}
+
+  make
+  make install DESTDIR="${srcdir}/dest"
+}
+
+
+check() {
+  cd "${srcdir}"/build-${CARCH}
+  make test || true
+}
+
+package_libhubbub() {
+
+  cd ${srcdir}/dest
+  mkdir -p "${pkgdir}/usr/bin"
+  cp -f usr/bin/*.dll "${pkgdir}/usr/bin"
+  cd "${srcdir}"/build-${CARCH}
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+}
+
+package_libhubbub-devel() {
+  groups=('development')
+  options=('staticlibs')
+  depends=("libhubbub=${pkgver}")
+  pkgdesc="Headers and static library for libhubbub"
+
+  cd ${srcdir}/dest
+  mkdir -p ${pkgdir}/usr
+  cp -rf ${srcdir}/dest/usr/include $pkgdir/usr/
+  cp -rf ${srcdir}/dest/usr/lib $pkgdir/usr/
+}
+

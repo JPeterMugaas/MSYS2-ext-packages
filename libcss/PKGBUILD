@@ -1,0 +1,94 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=libcss
+pkgbase=${_realname}
+pkgname=("${_realname}" "${_realname}-devel")
+pkgver=0.8.0
+pkgrel=1
+pkgdesc="CSS parser and selection engine (mingw-w64)"
+arch=('any')
+url='http://www.netsurf-browser.org/projects/libcss/'
+license=('MIT')
+depends=("libparserutils>=0.2.4" "libwapcaplet>=0.4.1")
+makedepends=("cmake" 
+             "libparserutils-devel>=0.2.4"
+             "libwapcaplet-devel>=0.4.1")
+options=('strip' 'staticlibs')
+source=("http://download.netsurf-browser.org/libs/releases/${_realname}-$pkgver-src.tar.gz"
+        CMakeLists.txt)
+sha256sums=('35a0490d98c23e09b8d2b5e4619926131c5b98da7a9db2ed00322f63fbc2ad5f'
+         'SKIP')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  cp ../CMakeLists.txt .
+#  apply_patch_with_msg fix-parsegen.patch
+}
+
+build() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  cmake \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      "${extra_config[@]}" \
+      -DBUILD_{SHARED,STATIC}_LIBS=ON \
+      ../${_realname}-${pkgver}
+
+  make
+  make install DESTDIR="${srcdir}/dest"
+}
+
+
+check() {
+  cd "${srcdir}"/build-${CARCH}
+  make test || true
+}
+
+package_libcss() {
+  cd ${srcdir}/dest
+  mkdir -p "${pkgdir}/usr/bin"
+  cp -f usr/bin/*.dll "${pkgdir}/usr/bin"
+  cd "${srcdir}"/build-${CARCH}
+  # license
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}/usr/share/licenses/${_realname}/COPYING
+}
+
+package_libcss-devel() {
+  groups=('development')
+  options=('staticlibs')
+  depends=("libcss=${pkgver}")
+  pkgdesc="Headers and static library for libcss"
+
+  cd ${srcdir}/dest
+  mkdir -p ${pkgdir}/usr
+  cp -rf ${srcdir}/dest/usr/include $pkgdir/usr/
+  cp -rf ${srcdir}/dest/usr/lib $pkgdir/usr/
+}

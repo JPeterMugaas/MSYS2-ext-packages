@@ -1,0 +1,103 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=libdom
+pkgbase=${_realname}
+pkgname=("${_realname}" "${_realname}-devel")
+pkgver=0.3.3
+pkgrel=1
+pkgdesc="Implementation of the W3C DOM"
+arch=('any')
+url='http://www.netsurf-browser.org/projects/libnsgif/'
+license=('MIT')
+depends=("expat"
+         "libparserutils>=0.2.4"
+         "libwapcaplet>=0.4.1"
+         "libhubbub>=0.3.5")
+makedepends=("cmake"
+             "gperf"
+             "libparserutils-devel>=0.2.4"
+             "libwapcaplet-devel>=0.4.1"
+             "libhubbub-devel>=0.3.5")
+options=('strip' 'staticlibs')
+source=("http://download.netsurf-browser.org/libs/releases/${_realname}-$pkgver-src.tar.gz"
+        CMakeLists.txt
+        intypes_include.patch)
+sha256sums=('e06a987d61d0783b81170ddb920d80802a1616aa7f1a7a458c6fd0564f3929a4'
+         'SKIP'
+         'SKIP')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  cp ../CMakeLists.txt .
+  apply_patch_with_msg intypes_include.patch
+}
+
+build() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  cmake \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      "${extra_config[@]}" \
+      -DBUILD_{SHARED,STATIC}_LIBS=ON \
+      ../${_realname}-${pkgver}
+
+  make
+  make install DESTDIR="${srcdir}/dest"
+}
+
+
+check() {
+  cd "${srcdir}"/build-${CARCH}
+  make test
+}
+
+package_libdom() {
+
+  cd ${srcdir}/dest
+  mkdir -p "${pkgdir}/usr/bin"
+  cp -f usr/bin/*.dll "${pkgdir}/usr/bin"
+  cd "${srcdir}"/build-${CARCH}
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+}
+
+package_libdom-devel() {
+  groups=('development')
+  options=('staticlibs')
+  depends=("libdom=${pkgver}")
+  pkgdesc="Headers and static library for libcss"
+
+  cd ${srcdir}/dest
+  mkdir -p ${pkgdir}/usr
+  cp -rf ${srcdir}/dest/usr/include $pkgdir/usr/
+  cp -rf ${srcdir}/dest/usr/lib $pkgdir/usr/
+}
+

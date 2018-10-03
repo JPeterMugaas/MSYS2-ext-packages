@@ -1,0 +1,15 @@
+--- libparserutils-0.2.4/test/cscodec-utf16.c.orig	2018-09-24 01:50:34.456328100 -0400
++++ libparserutils-0.2.4/test/cscodec-utf16.c	2018-09-24 01:54:00.502994400 -0400
+@@ -3,8 +3,12 @@
+ #include <string.h>
+ 
+ /* These two are for htonl / ntohl */
++#ifdef _WIN32
++#include <winsock2.h>
++#else
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
++#endif
+ 
+ #include <parserutils/charset/codec.h>
+ 

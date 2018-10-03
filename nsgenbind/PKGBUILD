@@ -1,0 +1,81 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=nsgenbind
+pkgbase=${_realname}
+pkgname=(${_realname})
+pkgver=0.5
+pkgrel=1
+pkgdesc="NetSurf JavaScript binding generator"
+arch=('any')
+url='http://git.netsurf-browser.org/nsgenbind.git/' #no https available
+license=('GPL')
+depends=('libparserutils>=0.2.4' 'libwapcaplet>=0.4.1')
+makedepends=('bison' 'flex' "cmake" 'libparserutils-devel>=0.2.4' "libwapcaplet-devel>=0.4.1")
+options=('strip' 'staticlibs')
+# no https
+source=("git://git.netsurf-browser.org/nsgenbind.git#tag=release/$pkgver"
+        CMakeLists.txt
+        print-format.patch)
+md5sums=('SKIP'
+         'SKIP'
+         'SKIP')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  cd "${srcdir}"/${_realname}/
+  cp ../../CMakeLists.txt .
+  apply_patch_with_msg print-format.patch
+#    0002-A-less-important-fix.patch
+}
+
+build() {
+  cd "${srcdir}"/${_realname}/
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  cmake \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      "${extra_config[@]}" \
+      "${srcdir}"/${_realname}
+
+  make
+}
+
+
+check() {
+  cd "${srcdir}"/build-${CARCH}
+  make test
+}
+
+package() {
+  cd "${srcdir}"/build-${CARCH}
+  make install DESTDIR="${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}/COPYING" \
+    ${pkgdir}/usr/share/licenses/${_realname}/COPYING
+}

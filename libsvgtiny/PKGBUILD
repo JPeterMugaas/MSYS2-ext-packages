@@ -1,0 +1,97 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=libsvgtiny
+pkgbase=${_realname}
+pkgname=("${_realname}" "${_realname}-devel")
+pkgver=0.1.6
+pkgrel=1
+pkgdesc="SVG Tiny library"
+arch=('any')
+url='http://www.netsurf-browser.org/projects/libsvgtiny/'
+license=('MIT')
+depends=("libparserutils>=0.2.4" "libwapcaplet>=0.4.1"
+         "libdom>=0.3.2")
+makedepends=("cmake")
+options=('strip' 'staticlibs')
+source=("git://git.netsurf-browser.org/libsvgtiny.git#tag=release/$pkgver"
+       CMakeLists.txt)
+md5sums=('SKIP'
+         'SKIP')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  cd "${srcdir}"/${_realname}
+  rm -f CMakeLists.txt
+  cp ../CMakeLists.txt .
+#  apply_patch_with_msg inttypes-fix.patch
+#    0002-A-less-important-fix.patch
+}
+
+build() {
+  cd "${srcdir}"/${_realname}
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  cmake \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      "${extra_config[@]}" \
+      -DBUILD_{SHARED,STATIC}_LIBS=ON \
+      ../${_realname}
+
+  make
+  make install DESTDIR="${srcdir}/dest"
+}
+
+
+check() {
+  cd "${srcdir}"/build-${CARCH}
+  make test
+}
+
+package_libsvgtiny() {
+
+  cd ${srcdir}/dest
+  mkdir -p "${pkgdir}/usr/bin"
+  cp -f usr/bin/*.dll "${pkgdir}/usr/bin"
+  cd "${srcdir}"/build-${CARCH}
+
+  install -Dm644 ${srcdir}/${_realname}/COPYING ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+}
+
+
+package_libsvgtiny-devel() {
+  groups=('development')
+  options=('staticlibs')
+  depends=("libsvgtiny=${pkgver}")
+  pkgdesc="Headers and static library for libcss"
+
+  cd ${srcdir}/dest
+  mkdir -p ${pkgdir}/usr
+  cp -rf ${srcdir}/dest/usr/include $pkgdir/usr/
+  cp -rf ${srcdir}/dest/usr/lib $pkgdir/usr/
+}
