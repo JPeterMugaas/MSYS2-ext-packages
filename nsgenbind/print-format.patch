@@ -1,0 +1,28 @@
+--- nsgenbind/src/duk-libdom-generated.c.orig	2018-10-01 12:10:07.297309700 -0400
++++ nsgenbind/src/duk-libdom-generated.c	2018-10-01 12:49:46.443472800 -0400
+@@ -27,6 +27,7 @@
+ #include "webidl-ast.h"
+ #include "ir.h"
+ #include "duk-libdom.h"
++#include "inttypes.h"
+ 
+ static int
+ output_generated_attribute_user_getter(FILE* outf,
+@@ -48,7 +49,7 @@ output_generated_attribute_user_getter(F
+                         "\tdom_event_target *et = (dom_event_target *)(((node_private_t *)priv)->node);\n"
+                         "\tdom_string *name;\n"
+                         "\tdom_exception exc;\n\n"
+-                        "\texc = dom_string_create((const uint8_t *)\"%s\", %ld, &name);\n"
++                        "\texc = dom_string_create((const uint8_t *)\"%s\", %" PRIxPTR ", &name);\n"
+                         "\tif (exc != DOM_NO_ERR) return 0;\n\n"
+                         "\tduk_push_this(ctx);\n"
+                         "\t/* ... node */\n"
+@@ -225,7 +226,7 @@ output_generated_attribute_user_setter(F
+                         "\t/* handlerfn this */\n"
+                         "\tduk_get_prop_string(ctx, -1, HANDLER_MAGIC);\n"
+                         "\t/* handlerfn this handlers */\n"
+-                        "\tduk_push_lstring(ctx, \"%s\", %ld);\n"
++                        "\tduk_push_lstring(ctx, \"%s\", %" PRIxPTR ");\n"
+                         "\t/* handlerfn this handlers %s */\n"
+                         "\tduk_dup(ctx, -4);\n"
+                         "\t/* handlerfn this handlers %s handlerfn */\n"
