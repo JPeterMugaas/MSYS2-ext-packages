@@ -1,0 +1,49 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=efxc2
+pkgbase=${_realname}
+pkgname=("${_realname}")
+pkgver=0.0.3.67
+pkgrel=1
+pkgdesc="Enhanced version of fxc2 (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+url="https://github.com/JPeterMugaas/efxc2"
+license=('spdx:MPL-2.0')
+makedepends=("cmake"
+             "ninja")
+source=("${_realname}-${pkgver}.tar.gz"::"https://github.com/JPeterMugaas/efxc2/archive/refs/tags/${pkgver}.tar.gz")
+sha256sums=('56a98c87e7e4926ac938806d20de806692ebc1bd153783a4e296c34ebd23b6b8')
+
+build() {
+  mkdir -p "${srcdir}/build-${MSYSTEM}" && cd "${srcdir}/build-${MSYSTEM}"
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+   cmake \
+      -GNinja \
+      -DCMAKE_INSTALL_PREFIX="/usr" \
+      "${extra_config[@]}" \
+      ../efxc2-${pkgver}
+
+  cmake --build .
+}
+
+check() {
+  cd "${srcdir}/build-${MSYSTEM}"
+
+  cmake --build . --target test || true
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM}"
+
+  DESTDIR="${pkgdir}" cmake.exe --install .
+
+  install -Dm644 "${srcdir}/efxc2-${pkgver}/license_MPL_2_0.txt" "${pkgdir}/usr/share/licenses/${_realname}/LICENSE"
+}
