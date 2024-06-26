@@ -3,7 +3,7 @@
 _realname=efxc2
 pkgbase=${_realname}
 pkgname=("${_realname}")
-pkgver=0.0.12.244
+pkgver=0.0.13.252
 pkgrel=1
 pkgdesc="Enhanced version of fxc2 (mingw-w64)"
 arch=('any')
@@ -14,7 +14,7 @@ makedepends=("cmake"
              "ninja")
 depends=('gcc-libs')
 source=("${_realname}-${pkgver}.tar.gz"::"https://github.com/JPeterMugaas/efxc2/archive/refs/tags/${pkgver}.tar.gz")
-sha256sums=('e59b5738dfd76b377736bc13238ad05a7255eb807743568775f1d3f57b835daa')
+sha256sums=('09b03705f94403c6ac6f03702c3faa03290eae3e0bbda75050751b0e40bfa23a')
 
 build() {
   mkdir -p "${srcdir}/build-${MSYSTEM}" && cd "${srcdir}/build-${MSYSTEM}"
